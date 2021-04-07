@@ -1,140 +1,169 @@
-import React, { Component } from 'react';
+import React, {Component} from 'react';
 import './App.css';
+import queryString from 'query-string';
+
+import {Head} from './inc';
+import {Main} from './page/index.js';
 import axios from 'axios';
-import {BrowserRouter, Route} from 'react-router-dom';
 
-class App extends Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      name: '',
-      list: [],
-      update: false,
+class App extends Component{
+    constructor(props){
+        super(props)
+        this.state = {
+            login : false,
+            admin : false,
+            user_ip : "",
+            signup : false,
+            login_modal : false,
+            list_data : [],
+            list_page : 1,
+            list_limit : 10,
+            list_all_page : [],
+            list_search : "",
+            category : "",
+        }
     }
-  }
 
-  componentDidMount(){
-    this._getData();
-  }
+    componentDidMount() {
 
+        this._getListData();
 
-  _addData = async(e) => {
-      const {name} = this.state;
-      e.preventDefault();
+        if(sessionStorage.login && sessionStorage.IP) {
+            this.setState({
+                login : JSON.parse(sessionStorage.login).id,
+                admin : JSON.parse(sessionStorage.login).admin,
+                user_ip : JSON.parse(sessionStorage.IP)
+            })
+        }
+    }
 
-      const res = await axios('/add/data',{
-          method : 'POST',
-          data : { 'data' : name},
-          headers: new Headers()
-      })
+    _login = (data) => {
+        sessionStorage.setItem('login', JSON.stringify(data.suc))
+        sessionStorage.setItem('IP', JSON.stringify(data.ip))
 
-      if(res.data){
-        alert('데이터를 추가함');
-        return window.location.reload();
-      }
-  }
+        this.setState({
+                        login : JSON.parse(sessionStorage.login).id,
+                        admin : JSON.stringify(data.suc).admin,
+                        user_ip : JSON.parse(sessionStorage.IP)
+        })
+        return window.location.reload()
+    }
 
-   _nameUpdate(e){
-     this.setState({name: e.target.value})
-   }
+    _logout = () => {
+        this.setState({login : false, admin : false, user_ip : ""})
 
-   _getData = async () => {
-     const res = await axios.get('/get/data');
+        sessionStorage.removeItem('login')
+        sessionStorage.removeItem('IP')
+    }
 
-     if(res.data[0] === undefined){
-       let cover = [];
-       cover.push(res.data);
+    _toggleModal = (boolean) => {
+        this.setState({login_modal : boolean})
+    }
 
-       return this.setState({list : cover})
-     }
-     this.setState({list : res.data});
-   }
+    _setPage = function() {
+        if(sessionStorage.page){
+            this.setState({ list_page : Number(sessionStorage.page)})
+            return Number(sessionStorage.page);
+        }
 
-   _modify = async(el) => {
-     const modify = prompt(el.name + '을 수정')
+        this.setState({list_page : 1})
+        return 1;
+    }
 
-     if(modify !== null){
-       const body = {
-         name : modify,
-         id : el.id
-       }
+    _changePage = (el) => {
+        this.setState({list_page : el})
+        sessionStorage.setItem('page', el);
 
-       const res = await axios('/modify/data', {
-         method: 'POST',
-         data: {'modify': body},
-         headers: new Headers()
-       })
+        return this._getListData();
+    }
 
-       if(res.data){
-         alert('데이터를 수정했습니다.')
-         return window.location.reload();
-       }
-     }
-   }
-   _delete = async (el) => {
-     const confirm = window.confirm(el.name + '을 삭제하시겠습니까?');
+    _getListData = async function() {
+        const {list_limit} = this.state;
+        const list_pages = this._setPage();
 
-     if(confirm){
-       const body = {id : el.id}
-       const res = await axios('/delete/data', {
-         method: 'POST',
-         data: {'delete': body},
-         headers: new Headers()
-       })
+        let categorys = '';
+        if(sessionStorage.getItem('category')) {
+            categorys = sessionStorage.getItem('category')
+        }
 
-       if(res.data){
-         alert('데이터를 삭제했습니다.')
-         return window.location.reload();
-       }
-     }
-   }
+        let search = "";
+        if(queryString.parse(this.props.location.search)){
+            search = queryString.parse(this.props.location.search).search;
+        }
 
-  render() {
-    const {list} = this.state;
+        const total_cnt = await axios('/get/board_cnt', {
+            method : 'POST',
+            headers : new Headers(),
+            data : { search : search, category : categorys}
+        });
 
-    return(
-      <div className='App'>
-        <h3>Welcome to Blog </h3>
-        <h5>https://cys779988.github.io</h5>
+        const total_list = await axios('/get/board', {
+            method : 'POST',
+            headers : new Headers(),
+            data : {
+                limit : list_limit,
+                page : list_pages,
+                search : search,
+                category : categorys
+            }
+        })
 
-        <br/>
-        <form method='POST' onSubmit={this._addData}>
-            <input type='text' maxLength='10' onChange={(e) => this._nameUpdate(e)}/>
-            <input type='submit' value='Add'/>
-        </form>      
+        let page_arr = [];
 
-        <br/>
-        <div style={{ height : '250px', overflow : 'auto' }}>
-          <h4 style={{ color : '#ababab'}}> Teachers List </h4>
-          <div style={{ border : 'solid 1px black', width : '50%', marginLeft : '25%', textAlign : 'left' }}>
-            <div style={{display: 'grid', gridTemplateColumns: '32% 35% 30%', textAlign: 'center'}}>
-                <div> Number </div>
-                <div> Name </div>
-                <div> Other </div>
+        for(let i = 1; i<=Math.ceil(total_cnt.data.cnt / list_limit); i++){
+            page_arr.push(i);
+        }
+
+        this.setState({list_data : JSON.stringify(total_list.data),
+                        list_all_page : page_arr,
+                        list_search : search })
+    }
+
+    _changeCategory = (target) => {
+        sessionStorage.setItem('category', target);
+        this.setState({category : target});
+
+        return this._getListData();
+    }
+
+    render(){
+        const {login, admin, user_ip, login_modal,
+        list_data, list_all_page, list_search, list_page
+        } = this.state;
+        const {_login, _logout, _toggleModal, _getSearch, _changePage, _changeCategory} = this;
+        return(
+            <div>
+                <div>
+                    <Head
+                        login = {login}
+                        admin = {admin}
+                        user_ip = {user_ip}
+                        _login = {_login}
+                        _logout = {_logout}
+                        login_modal = {login_modal}
+                        _toggleModal = {_toggleModal}
+                    />
+                </div>
+
+                <div>
+                    <Main
+                        admin = {admin}
+                        user_ip = {user_ip}
+                        login = {login}
+                        login_modal = {login_modal}
+                        _toggleModal = {_toggleModal}
+                        _getSearch = {_getSearch}
+                        list_data = {list_data}
+                        list_all_page = {list_all_page}
+                        list_search = {list_search}
+                        list_page = {list_page}
+                        _changePage = {_changePage}
+                        _changeCategory = {_changeCategory}
+                    />
+                </div>
             </div>
-          </div>
-
-        {list.length !==0
-          ? list.map( (el, key) => {
-            return(
-              <div key={key} style={{display:'grid', lineHeight:'40px', gridTemplateColumns: '32% 35% 20% 0%', width: '50%', marginLeft: '25%'}}>
-                <div> {el.id} </div>
-                <div> {el.name} </div>
-                <div
-                    style={{color: '#ababab'}}
-                    onClick={() => {this._modify(el)}}>Modify</div>
-                <divn
-                    style={{color: '#ababab'}}
-                    onClick={() => {this._delete(el)}}>Delete</div>
-              </div>
-            )
-          })
-          : null}
-          </div>
-        </div>
-        
-    )
-  }
+        );
+    }
 }
 
 export default App;

@@ -35,19 +35,20 @@ db.sequelize
     console.log('Unable to connect to the database: ', err);
 });
 
-db.Teacher = require('./teacher')(sequelize, Sequelize);
-db.Class = require('./class')(sequelize, Sequelize);
+db.Board = require('./board')(sequelize, Sequelize);
+db.Category = require('./category')(sequelize, Sequelize);
+db.User = require('./user')(sequelize, Sequelize);
 
-db.Teacher.hasOne(db.Class);
 
-db.Teacher.hasMany(db.Class, {
-    foreignKey: 'teacher_id',
+// 1:N 관계에서 N을 갖는 쪽에 hasMany 정의, 1을 갖는 쪽에 belongsTo 정의
+
+db.Category.hasMany(db.Board, {
+    foreignKey : 'cat_id',
     sourceKey : 'id'
 });
-db.Class.belongsTo(db.Teacher, {
-    foreignKey: 'teacher_id',
+db.Board.belongsTo(db.Category, {
+    foreignKey : 'cat_id',
     targetKey : 'id'
 });
 
-db.secret = '(9*)5$&!3%^0%^@@2$1!#5@2!4';
 module.exports = db;
