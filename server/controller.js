@@ -99,7 +99,14 @@ module.exports = {
             model.add.user(body, hash_pw, now_date, result => {
                 res.send(result);
             })
-        }
+        },
+        reply : (req, res) => {
+            const body = req.body;
+    
+            model.add.reply(body, now_date, result => {
+              res.send(result)
+            })
+        }    
     },
 
     get : {
@@ -129,17 +136,29 @@ module.exports = {
             model.get.category(data => {
                 res.send(data)
             })
+        },
+        pre_and_next : (req, res) => {
+            const body = req.body;
+            model.get.pre_and_next(body, data => {
+              res.send(data)
+            })
+        },
+        reply_data : (req, res) => {
+            const body = req.body;
+    
+            model.get.reply_data(body, data => {
+              res.send(data)
+            })
         }
     },
     update : {
         view_cnt : (req, res) => {
             const body = req.body;
+            const expires = new Date();
+            expires.setDate(expires.getDate() + 1);
 
-            const expires = new Date()
-            expires.setDate(expires.getDate() + 1)
-
-            const cookie_name = 'board_' + body.id
-            const exist_cookie = req.cookie[cookie_name]
+            const cookie_name = 'board_' + body.id;
+            const exist_cookie = req.cookies[cookie_name];
 
             if(!exist_cookie){
                 res.cookie(cookie_name, true, {
@@ -160,6 +179,32 @@ module.exports = {
                 res.send(true)
             })
 
+        },
+        like : (req, res) => {
+            const body = req.body;
+            
+            model.check.like(body, result => {
+                if(result.length === 0) {
+                    model.update.like(body, result => {
+                        res.send(result)
+                    })
+                } else {
+                    if(body.type === 'remove'){
+                        model.update.like(body,result => {
+                            res.send(result)
+                        })
+                    } else {
+                       res.send(false)
+                    }
+                }
+            })
+        },
+        board : (req, res) => {
+            const body = req.body;
+
+            model.update.board(body, data => {
+                res.send(true)
+            })
         }
     },
     delete : {
@@ -169,6 +214,19 @@ module.exports = {
                 if(result){
                     res.send(result);
                 }
+            })
+        },
+        board : (req, res) => {
+            const body = req.body;
+            model.delete.board(body, () => {
+                res.send(true)
+            })
+        },
+        reply : (req, res) => {
+            const body = req.body;
+    
+            model.delete.reply(body, () => {
+              res.send(true)
             })
         }
     },
@@ -226,5 +284,14 @@ module.exports = {
             })    
         }
     },
+    check : {
+        like : (req, res) => {
+            const body = req.body;
+
+            model.check.like(body, result => {
+                res.send(result);
+            })
+        }
+    }
 
 }

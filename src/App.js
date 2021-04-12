@@ -5,6 +5,7 @@ import queryString from 'query-string';
 import {Head} from './inc';
 import {Main} from './page/index.js';
 import axios from 'axios';
+import { Category } from './page/left';
 
 class App extends Component{
     constructor(props){
@@ -20,19 +21,31 @@ class App extends Component{
             list_limit : 10,
             list_all_page : [],
             list_search : "",
+            data : "",
+            date : "",
             category : "",
+            user_id : "",
+            like_num : "",
+            like_exist : null,
+            pre_view : "",
+            next_view : "",
+            board_id : "",
+            category_data : [],
+            select_category : "",      
         }
     }
 
     componentDidMount() {
 
         this._getListData();
+        this._getAllCategoryData();
 
         if(sessionStorage.login && sessionStorage.IP) {
             this.setState({
                 login : JSON.parse(sessionStorage.login).id,
                 admin : JSON.parse(sessionStorage.login).admin,
-                user_ip : JSON.parse(sessionStorage.IP)
+                user_ip : JSON.parse(sessionStorage.IP),
+                user_id : JSON.parse(sessionStorage.login).user_id
             })
         }
     }
@@ -44,7 +57,8 @@ class App extends Component{
         this.setState({
                         login : JSON.parse(sessionStorage.login).id,
                         admin : JSON.stringify(data.suc).admin,
-                        user_ip : JSON.parse(sessionStorage.IP)
+                        user_ip : JSON.parse(sessionStorage.IP),
+                        user_id : JSON.parse(sessionStorage.login).user_id
         })
         return window.location.reload()
     }
@@ -126,11 +140,73 @@ class App extends Component{
         return this._getListData();
     }
 
+    _getData = async (board_id) => {
+        const getData = await axios('/get/board_data', {
+            method : 'POST',
+            headers : new Headers(),
+            data : {id : board_id}
+        });
+        const date = getData.data.data[0].date.slice(0,10) + ' ' + getData.data.data[0].date.slice(11,16);
+        return this.setState({data : getData.data.data[0], date :date, board_id : getData.data.data[0].board_id})
+    }
+
+    _getAllLike = async (board_id) => {
+        const getData = await axios('/get/board_data', {
+          method : 'POST',
+          headers: new Headers(),
+          data : { id : board_id }
+        });
+        this.setState({ like_num : getData.data.data[0].likes })
+      }
+
+      _getPreAndNextData = async (board_id) => {
+        const category = sessionStorage.getItem('category');
+        const res = await axios('/get/pre_and_next', {
+            method : 'POST',
+            headers : new Headers(),
+            data : {board_id : board_id, category, category}
+        })
+        this.setState({
+            pre_view : res.data.pre,
+            next_view : res.data.next
+        })
+    }
+
+    _getLikeExist = (boo) => {
+        this.setState({ like_exist : boo})
+    }
+
+    _getAllCategoryData = async function() {
+        const getData = await axios('/get/category');
+
+        this.setState({category_data : getData.data})
+    }
+
+    _selectCategoryData = async (board_id) => {
+        
+        let category = document.getElementsByName('select_category')[0].value;
+
+        if(board_id) {
+            const getData = await axios('/get/board_data', {
+                method : 'POST',
+                headers : new Headers(),
+                data : { id : board_id }
+            });
+            console.log(getData);
+            return  this.setState({ select_category : getData.data.data[0].cat_id });
+        }
+        this.setState({
+            select_category : category
+        })
+    }
+
+
     render(){
-        const {login, admin, user_ip, login_modal,
-        list_data, list_all_page, list_search, list_page
+        const {login, admin, user_ip, login_modal, data, date, board_id,
+        list_data, list_all_page, list_search, list_page, user_id, like_num, like_exist, pre_view, next_view, category_data, select_category
         } = this.state;
-        const {_login, _logout, _toggleModal, _getSearch, _changePage, _changeCategory} = this;
+
+        const {_login, _logout, _toggleModal, _getSearch, _changePage, _changeCategory, _getPreAndNextData, _getLikeExist, _getAllLike, _getData, _selectCategoryData} = this;
         return(
             <div>
                 <div>
@@ -159,6 +235,21 @@ class App extends Component{
                         list_page = {list_page}
                         _changePage = {_changePage}
                         _changeCategory = {_changeCategory}
+                        user_id = {user_id}
+                        data = {data}
+                        date = {date}
+                        board_id = {board_id}
+                        like_num = {like_num}
+                        like_exist = {like_exist}
+                        _getAllLike = {_getAllLike}
+                        pre_view = {pre_view}
+                        next_view = {next_view}
+                        _getPreAndNextData = {_getPreAndNextData}
+                        _getLikeExist = {_getLikeExist}
+                        _getData = {_getData}
+                        category_data = {category_data}
+                        select_category = {select_category}
+                        _selectCategoryData = {_selectCategoryData}
                     />
                 </div>
             </div>

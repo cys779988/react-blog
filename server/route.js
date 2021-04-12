@@ -16,5 +16,14 @@ router.post('/add/user', controller.add.user);
 router.post('/search/id', controller.search.id);
 router.post('/search/pw', controller.search.pw);
 router.post('/update/pw', controller.update.pw);
+router.post('/update/like', controller.update.like);
+router.post('/check/like', controller.check.like);
+router.post('/get/pre_and_next', controller.get.pre_and_next);
+router.post('/delete/board', controller.delete.board);
+router.post('/update/board', controller.update.board);
+router.post('/add/reply', controller.add.reply);
+router.post('/get/reply_data', controller.get.reply_data);
+router.post('/delete/reply', controller.delete.reply);
+
 
 module.exports = router;

@@ -4,10 +4,6 @@ import {CKEditor} from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
 class ckeditor extends Component {
-  constructor(props) {
-    super(props)
-  }
-
   render() {
     const { contents, _getContents } = this.props;
     

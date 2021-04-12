@@ -2,6 +2,7 @@
   "name": "blog",
   "version": "0.1.0",
   "private": true,
+  "build": "GENERATE_SOURCEMAP=false react-scripts build",
   "dependencies": {
     "@babel/core": "7.12.3",
     "@ckeditor/ckeditor5-build-classic": "^27.0.0",

@@ -3,7 +3,7 @@ import React, { Component } from 'react';
 import Modal from 'react-awesome-modal';
 import axios from 'axios';
 
-import {Search_id, Search_pw} from './index.js';
+import {Search_Id, Search_Pw} from './index.js';
 
 class login extends Component {
     constructor(props){
@@ -13,6 +13,7 @@ class login extends Component {
             password : "",
             search_id_modal : false,
             search_pw_modal : false,
+            close : "https://iconmonstr.com/wp-content/g/gd/makefg.php?i=../assets/preview/2012/png/iconmonstr-x-mark-2.png&r=0&g=0&b=0",            
         }
     }
 
@@ -30,7 +31,7 @@ class login extends Component {
             password : pw_val
         })
     }
-    _selectUserData = async (e) => {
+    _selectUserData = async () => {
         const id = this.state.id.trim();
         const password = this.state.password.trim();
 
@@ -83,11 +84,13 @@ class login extends Component {
         return this.props._toggleModal(true)
     }
     render() {
+        const {close} = this.state;
         return (
             <div>
                 <Modal visible={this.props.login_modal} width="400" height="500" effect="fadeInDown" onClickAway={() => this.props._toggleModal(false)}>
                             <div>
                                 <h4 className='acenter login_tit'>로그인</h4>
+                                <img src={close} id='login_close' title='닫기' onClick={() => this.props._toggleModal(false)} />
                                 <form>
                                     <div className='login_div'>
                                         <div className='login_input_div'>
@@ -100,8 +103,7 @@ class login extends Component {
                                         </div>
 
                                         <div className='submit_div'>
-                                            <div> <input type='button' value='로그인' onClick={()=> {this._selectUserData()}}/></div>
-                                            <div> <input type='button' value='취소'  onClick={()=> {this.props._toggleModal()}}/></div>
+                                        <b id='login_button' onClick={() => this._selectUserData()}> 로그인 </b>
                                         </div>
 
                                     </div>
@@ -113,13 +115,13 @@ class login extends Component {
                                 </div>
                             </div>
                 </Modal>
-                <Search_id
+                <Search_Id
                     search_id_modal = {this.state.search_id_modal}
                     _closeSearchModal = {this._closeSearchModal}
                     _backSearchModal = {this._backSearchModal}
                     target = "id"
                 />
-                <Search_pw
+                <Search_Pw
                     search_pw_modal = {this.state.search_pw_modal}
                     _closeSearchModal = {this._closeSearchModal}
                     _backSearchModal = {this._backSearchModal}

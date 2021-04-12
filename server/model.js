@@ -3,8 +3,10 @@ const sequelize = require('./models').sequelize;
 const {
     Board,
     Category,
-    Sequelize: {Op},
+    Like,
     User,
+    Reply,
+    Sequelize: {Op},
 } = require('./models');
 sequelize.query('SET NAMES utf8;');
 
@@ -31,7 +33,8 @@ module.exports = {
                 contents : body.contents,
                 date : new Date(),
                 view_cnt : 0,
-                cat_id : 1,
+                cat_id : body.category,
+                likes : 0,
             })
             .then(data => {
                 callback(true)
@@ -76,6 +79,16 @@ module.exports = {
                     .then( () => callback(true));
                 }
             })
+        },
+        reply : (body, now_date, callback) => {
+            Reply.create({
+                contents : body.contents,
+                date : now_date,
+                board_id : body.board_id,
+                user_id : body.user_id
+            })
+            .then( () => callback(true) )
+            .catch( () => callback(false) )
         }
     },
 
@@ -152,6 +165,75 @@ module.exports = {
             .catch(err => {
                 throw err;
             })
+        },
+        pre_and_next : (body, callback) => {
+            let result = {};
+
+            let where_1 = body.category;
+            let where_2 = '';
+            if(!body.category) {
+            // 전체보기를 클릭했을 경우
+                where_2 = 0;
+                        
+            } else if(body.category) {
+            // 카테고리를 클릭했을 경우
+                where_2 = null;
+            }
+
+            Board.findAll({
+                where : {
+                    board_id : {
+                        [Op.gt] : body.board_id
+                    },
+                    cat_id : {
+                        [Op.or] : {
+                            [Op.eq] : where_1,
+                            [Op.gt] : where_2
+                        }
+                    }
+                },
+                limit : 1
+            })
+            .then(
+                next => {
+                    result['next'] = next;
+
+                    Board.findAll({
+                        where : {
+                            board_id : {
+                                [Op.lt] : body.board_id
+                            },
+                            cat_id : {
+                                [Op.or] : {
+                                    [Op.eq] : where_1,
+                                    [Op.gt] : where_2
+                                }
+                            },
+                        },
+                        limit : 1,
+                        order : sequelize.literal('board_id DESC')
+                    })
+                    .then(
+                        pre => {
+                            result['pre'] = pre;
+                            callback(result);
+                        }
+                    )
+                }
+            )
+        },
+        reply_data : (body, callback) => {
+            Reply.findAndCountAll({
+                include : [
+                    {
+                        model : User,
+                    }
+                ],
+                where : { board_id : body.board_id }
+            })
+            .then( (result) => callback(result) 
+            )
+            .catch(err => { throw err; })
         }
     },
 
@@ -173,6 +255,42 @@ module.exports = {
             })
             .then( () => {callback(true)})
             .catch(err => { throw err; })
+        },
+        like : (body, callback) => {
+            if(body.type === 'add') {
+                Board.update({likes : sequelize.literal('likes + 1')}, {
+                    where : {board_id : body.board_id}
+                })
+
+                Like.create({
+                    board_id : body.board_id,
+                    user_id : body.user_id
+                })
+            } else if(body.type === 'remove') {
+                Board.update({likes : sequelize.literal('likes - 1')}, {
+                    where : {board_id : body.board_id}
+                })
+
+                Like.destroy({
+                    where : {
+                        board_id : body.board_id,
+                        user_id : body.user_id
+                    }
+                })
+            }
+
+            callback(true)
+        },
+        board : (body, callback) => {
+            Board.update({
+                title : body.title,
+                contents : body.contents,
+                cat_id : body.category
+            }, {
+                where : { board_id : body.board_id }
+            })
+            .then( () => { callback(true) })
+            .catch(err => { throw err; })
         }
     },
     
@@ -188,6 +306,20 @@ module.exports = {
                 .then ( () => {callback(true)})
                 .catch(err => {throw err;})
             })
+        },
+        board : (body, callback) => {
+            Board.destroy({
+                where : { board_id : body.board_id }
+            })
+            .then( () => { callback(true) })
+            .catch(err => { throw err; })
+        },
+        reply : (body, callback) => {
+            Reply.destroy({
+                where : { reply_id : body.reply_id }
+            })
+            .then( () => { callback(true) })
+            .catch(err => { throw err; })
         }
     },
 
@@ -234,5 +366,18 @@ module.exports = {
             .catch(err => {throw err;})
         }
     },
+
+    check : {
+        like : (body, callback) => {
+            Like.findAll({
+                where : {
+                    board_id : body.board_id,
+                    user_id : body.user_id
+                }
+            })
+            .then(result => {callback(result)})
+            .catch(err => {throw err;})
+        }
+    }
     
 }

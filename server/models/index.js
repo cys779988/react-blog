@@ -38,8 +38,8 @@ db.sequelize
 db.Board = require('./board')(sequelize, Sequelize);
 db.Category = require('./category')(sequelize, Sequelize);
 db.User = require('./user')(sequelize, Sequelize);
-
-
+db.Like = require('./like')(sequelize, Sequelize);
+db.Reply = require('./reply')(sequelize, Sequelize);
 // 1:N 관계에서 N을 갖는 쪽에 hasMany 정의, 1을 갖는 쪽에 belongsTo 정의
 
 db.Category.hasMany(db.Board, {
@@ -49,6 +49,23 @@ db.Category.hasMany(db.Board, {
 db.Board.belongsTo(db.Category, {
     foreignKey : 'cat_id',
     targetKey : 'id'
+});
+db.Board.belongsToMany(db.User, {
+    through : 'like',
+    foreignKey : 'board_id'
+});
+db.User.belongsToMany(db.Board, {
+    through : 'like',
+    foreignKey : 'user_id',
+});
+db.User.hasMany(db.Reply, {
+    foreignKey: 'user_id',
+    sourceKey : 'user_id'
+});
+
+db.Reply.belongsTo(db.User, {
+      foreignKey: 'user_id',
+      targetKey : 'user_id'
 });
 
 module.exports = db;
