@@ -22,7 +22,7 @@ const mailPoster = nodeMailer.createTransport({
     port : '465',
     auth : {
         user: 'cys779988@naver.com',
-        pass: 'tkrl1212@@'
+        pass: ''
     }
 });
 
